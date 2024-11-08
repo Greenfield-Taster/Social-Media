@@ -14,15 +14,18 @@ import { useForm } from "react-hook-form";
 import { SignupValidation } from "@/lib/Validation";
 import { z } from "zod";
 import Loader from "@/components/ui/shared/Loader";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCreateUserAccount, useSignInAccount } from "@/lib/react-query/queriesAndMutations";
+import { useUserContext } from "@/context/AuthContext";
+
 
 const SignupForm = () => {
   const { toast } = useToast();
+  const {checkAuthUser, isLoading: isUserLoading} = useUserContext();
+  const navigate = useNavigate();
 
-const {mutateAsync : createUserAccount , isLoading: isCreatingUser} = useCreateUserAccount();
-
-const {mutateAsync : signInAccount, isLoading: isSigningIn} = useSignInAccount();
+const {mutateAsync : createUserAccount , isPending: isCreatingAccount} = useCreateUserAccount();
+const {mutateAsync : signInAccount, isPending: isSigningInUser} = useSignInAccount();
 
   const form = useForm<z.infer<typeof SignupValidation>>({
     resolver: zodResolver(SignupValidation),
@@ -52,7 +55,14 @@ const {mutateAsync : signInAccount, isLoading: isSigningIn} = useSignInAccount()
       return toast({title:"Sign in failed. Please try again."})
     }
 
-    
+    const isLoggedIn = await checkAuthUser();
+
+    if(isLoggedIn){
+      form.reset();
+      navigate('/');
+    }else{
+      return toast({title:"Sign up failed. Please try again."})
+    }
   }
 
   return (
@@ -123,12 +133,12 @@ const {mutateAsync : signInAccount, isLoading: isSigningIn} = useSignInAccount()
             )}
           />
           <Button type="submit" className="shad-button_primary">
-            {isCreatingUser ? (
+            {isCreatingAccount || isSigningInUser || isUserLoading ? (
               <div className="flex-center gap-2">
                 <Loader /> Loading...
               </div>
             ) : (
-              "Sign up"
+              "Sign Up"
             )}
           </Button>
 
